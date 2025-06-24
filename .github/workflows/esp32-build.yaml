@@ -48,12 +48,19 @@ jobs:
           echo "PASSWORD=${{ secrets[format('{0}_PASSWORD', matrix.board.secret_prefix)] }}" >> $GITHUB_ENV
           echo "HOSTNAME=${{ secrets[format('{0}_HOSTNAME', matrix.board.secret_prefix)] }}" >> $GITHUB_ENV
 
+      - name: Create base build folder for ${{ matrix.board.name }}
+        run: |
+          mkdir -p ${{ matrix.board.build_folder }}
+
       - name: Compile sketch for ${{ matrix.board.name }}
         run: |
           arduino-cli compile \
             --fqbn ${{ matrix.board.fqbn }} \
             --build-property build.extra_flags="-DWIFI_SSID=\"${SSID}\" -DWIFI_PASSWORD=\"${PASSWORD}\" -DWIFI_HOSTNAME=\"${HOSTNAME}\"" \
-            parking-sensor/parking-sensor/parking-sensor.ino
+            parking-sensor.ino \
+            --output-dir ${{ matrix.board.build_folder }} \
+            --libraries libraries \
+            --verify
         env:
           SSID: ${{ env.SSID }}
           PASSWORD: ${{ env.PASSWORD }}
@@ -64,4 +71,4 @@ jobs:
         with:
           name: firmware-${{ matrix.board.name }}
           path: |
-            parking-sensor/parking-sensor/build/${{ matrix.board.build_folder }}/parking-sensor.ino.bin
+            .build/${{ matrix.board.build_folder }}/parking-sensor.ino.bin

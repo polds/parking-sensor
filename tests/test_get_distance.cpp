@@ -1,5 +1,5 @@
 #define CATCH_CONFIG_MAIN
-#include "libraries/get_distance.h"
+#include "ParkingSensor.h"
 #include <catch2/catch_all.hpp>
 
 TEST_CASE("getDistanceCM returns correct value") {

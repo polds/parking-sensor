@@ -1,0 +1,87 @@
+version: '3'
+
+tasks:
+  build:sketch:
+    desc: Build the main sketch
+    silent: true
+    deps: [ clean ]
+    sources:
+    - parking-sensor.ino
+    generates:
+    - .build/parking-sensor.ino.bin
+    cmds:
+    - echo "ℹ️  Compiling main sketch..."
+    - |
+      arduino-cli compile \
+        --fqbn esp32:esp32:esp32doit-devkit-v1 \
+        parking-sensor.ino \
+        --output-dir .build/ \
+        --libraries libraries \
+        --verify
+    - echo "✅  Main sketch has been compiled!"
+    status:
+    - -z arduino-cli
+
+  build:test:
+    desc: Build tests and libraries
+    silent: true
+    deps: [ clean ]
+    sources:
+    - tests/test_*.cpp
+    generates:
+    - .build/test_*
+    cmds:
+    - echo "ℹ️  Compiling tests..."
+    - for: sources
+      cmd: |
+        echo "⌛ Building '{{ .ITEM | base }}'..."
+        g++ -std=c++17 {{ .ITEM }} \
+          libraries/ParkingSensor/{{ .ITEM | base | replace "test_" "" }} \
+          -I/opt/homebrew/include \
+          -Ilibraries/ParkingSensor \
+          -L/opt/homebrew/lib -lCatch2Main -lCatch2 \
+          -o .build/{{ .ITEM | base | trimSuffix ".cpp" }}
+    - echo "✅ All tests have been compiled!"
+    status:
+    - -z g++
+
+  clean:
+    desc: Clean build directory
+    silent: true
+    run: once
+    cmds:
+    - rm -rf .build
+    - mkdir -p .build
+
+  test:
+    desc: Run all tests
+    silent: true
+    deps: [ build:test ]
+    sources:
+    - .build/test_*
+    cmds:
+    - printf "\nℹ️  Running tests...\n\n"
+    - defer: printf "\nℹ️  All tests have executed!\n\n"
+    - for: sources
+      cmd: |
+        echo "⌛ Executing '{{ .ITEM | base }}'..."
+        ./{{ .ITEM }}
+        if [ $? -ne 0 ]; then
+          echo "❌ {{ .ITEM | base }} failed"
+          exit 1
+        fi
+        echo "✅ {{ .ITEM | base }} passed"
+    ignore_error: true
+    status:
+    - false # Force to run
+
+  all:
+    desc: Build and test all libraries
+    deps:
+    - build:sketch
+    - test
+
+  help:
+    desc: Show available tasks
+    cmds:
+    - task --list

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <WiFi.h>
 #include <ArduinoOTA.h>
+#include <ParkingSensor.h>
 
 #ifndef WIFI_SSID
 #define WIFI_SSID "changeme"
@@ -21,7 +22,14 @@ const char* hostname = WIFI_HOSTNAME;
 
 // Handle is the "main" loop logic that is executed.
 void handle() {
-  float distance = getDistanceCM(PIN_TRIG, PIN_ECHO);
+  float distance = getDistanceCM([&]() {
+    digitalWrite(PIN_TRIG, LOW);
+    delayMicroseconds(2);
+    digitalWrite(PIN_TRIG, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(PIN_TRIG, LOW);
+    return pulseIn(PIN_ECHO, HIGH, 60000UL); // 60ms = ~1029cm
+  });
   if (distance < 0) {
     Serial.println("no echo (out of range)");
     return;
@@ -124,37 +132,6 @@ void setup() {
 
   Serial.println("Parking Sensor successfully initialized!");
 }
-
-float getDistanceCM(uint8_t trigPin, uint8_t echoPin) {
-  const float SOUND_SPEED_CM_PER_US = 0.0343;
-  const int NUM_SAMPLES = 5;
-
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
-
-  long duration = pulseIn(echoPin, HIGH, 60000UL); // 60ms = ~1029cm
-  if (duration == 0 || duration >= 30000UL) {
-    // timeout — treat as out of range
-    return -1.0;
-  }
-  return duration * SOUND_SPEED_CM_PER_US / 2;
-
-  // float total = 0;
-  // for (int i = 0; i < NUM_SAMPLES; i++) {
-  //   long duration = pulseIn(echoPin, HIGH, 60000UL); // 60ms = ~1029cm
-  //   if (duration == 0 || duration >= 30000UL) {
-  //     // timeout — treat as out of range
-  //     return -1.0;
-  //   }
-  //   total += duration * SOUND_SPEED_CM_PER_US / 2;
-  //   delay(50);
-  // }
-  // return total / NUM_SAMPLES;
-}
-
 
 void loop() {
   ArduinoOTA.handle(); // Handle OTA updates
