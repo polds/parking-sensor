@@ -1,0 +1,67 @@
+name: Build ESP32 Parking Sensor
+
+on:
+  push:
+    paths:
+      - "parking-sensor.ino"
+      - "libraries/**"
+      - ".github/workflows/esp32-build.yml"
+  pull_request:
+    paths:
+      - "parking-sensor.ino"
+      - "libraries/**"
+      - ".github/workflows/esp32-build.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        board:
+          - name: peppermint
+            fqbn: esp32:esp32:esp32doit-devkit-v1
+            build_folder: .build/peppermint
+            secret_prefix: PEPPERMINT
+          - name: sleipnir
+            fqbn: esp32:esp32:esp32doit-devkit-v1
+            build_folder: .build/sleipnir
+            secret_prefix: SLEIPNIR
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
+        with:
+          version: latest
+
+      - name: Install ESP32 core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+
+      - name: Set secrets for ${{ matrix.board.name }}
+        id: secrets
+        run: |
+          echo "SSID=${{ secrets[format('{0}_SSID', matrix.board.secret_prefix)] }}" >> $GITHUB_ENV
+          echo "PASSWORD=${{ secrets[format('{0}_PASSWORD', matrix.board.secret_prefix)] }}" >> $GITHUB_ENV
+          echo "HOSTNAME=${{ secrets[format('{0}_HOSTNAME', matrix.board.secret_prefix)] }}" >> $GITHUB_ENV
+
+      - name: Compile sketch for ${{ matrix.board.name }}
+        run: |
+          arduino-cli compile \
+            --fqbn ${{ matrix.board.fqbn }} \
+            --build-property build.extra_flags="-DWIFI_SSID=\"${SSID}\" -DWIFI_PASSWORD=\"${PASSWORD}\" -DWIFI_HOSTNAME=\"${HOSTNAME}\"" \
+            parking-sensor/parking-sensor/parking-sensor.ino
+        env:
+          SSID: ${{ env.SSID }}
+          PASSWORD: ${{ env.PASSWORD }}
+          HOSTNAME: ${{ env.HOSTNAME }}
+
+      - name: Upload firmware binary for ${{ matrix.board.name }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.board.name }}
+          path: |
+            parking-sensor/parking-sensor/build/${{ matrix.board.build_folder }}/parking-sensor.ino.bin
