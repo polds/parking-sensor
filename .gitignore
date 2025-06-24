@@ -34,3 +34,4 @@ secrets-*.h
 *.exe
 *.out
 *.app
+test_get_distance
