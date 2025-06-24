@@ -58,7 +58,7 @@ jobs:
             --fqbn ${{ matrix.board.fqbn }} \
             --build-property build.extra_flags="-DWIFI_SSID=\"${SSID}\" -DWIFI_PASSWORD=\"${PASSWORD}\" -DWIFI_HOSTNAME=\"${HOSTNAME}\"" \
             parking-sensor.ino \
-            --output-dir ${{ matrix.board.build_folder }} \
+            --output-dir ${{ matrix.board.build_folder }}/ \
             --libraries libraries \
             --verify
         env:
