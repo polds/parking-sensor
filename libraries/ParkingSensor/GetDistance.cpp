@@ -1,4 +1,4 @@
-#include "get_distance.h"
+#include "GetDistance.h"
 
 float getDistanceCM(std::function<long()> pulseInFunc) {
     const float SOUND_SPEED_CM_PER_US = 0.0343;

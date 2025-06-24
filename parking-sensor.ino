@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <ArduinoOTA.h>
 #include <ParkingSensor.h>
+#include <Adafruit_NeoPixel.h>
 
 #ifndef WIFI_SSID
 #define WIFI_SSID "changeme"
@@ -17,8 +18,28 @@ const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 const char* hostname = WIFI_HOSTNAME;
 
-#define PIN_TRIG 18
-#define PIN_ECHO 19
+#define PIN_TRIG 18 // SonicSensor Trigger
+#define PIN_ECHO 19 // SonicSensor Echo
+
+#define PIN_SIGNAL 25 // LED Signal
+#define NUMPIXELS 10 // LED Count
+#define MINBRIGHT 1 // LED Minimum Brightness
+#define MAXBRIGHT 100 // LED Maximum Brightness
+
+#define MAX_DISTANCE 200.0  // cm
+#define ORANGE_DISTANCE 50.0
+#define RED_DISTANCE 30.0
+#define STOP_DISTANCE 20.0
+
+// create the light strip object
+Adafruit_NeoPixel Lightstrip(NUMPIXELS, PIN_SIGNAL, NEO_GRB + NEO_KHZ800);
+
+// State for inactivity and animation
+float lastDistance = -1;
+unsigned long lastChangeTime = 0;
+const float DISTANCE_MARGIN = 5.0; // cm
+const unsigned long INACTIVITY_TIMEOUT = 16000; // 16 seconds in ms
+bool lightsOn = true;
 
 // Handle is the "main" loop logic that is executed.
 void handle() {
@@ -34,7 +55,26 @@ void handle() {
     Serial.println("no echo (out of range)");
     return;
   }
-    
+
+  unsigned long now = millis();
+
+  // Animate parking bar based on distance
+  static bool flashState = false;
+  animateParkingBar(Lightstrip, distance, MAX_DISTANCE, STOP_DISTANCE, ORANGE_DISTANCE, RED_DISTANCE, flashState);
+
+  if (lastDistance < 0 || fabs(distance - lastDistance) > DISTANCE_MARGIN) {
+    lastChangeTime = now;
+    lastDistance = distance;
+    if (!lightsOn) {
+      animateLightstripOn(Lightstrip, Lightstrip.Color(0, 0, 255)); // Blue sweep
+      lightsOn = true;
+    }
+  } else if (lightsOn && (now - lastChangeTime > INACTIVITY_TIMEOUT)) {
+    Lightstrip.clear();
+    Lightstrip.show();
+    lightsOn = false;
+  }
+
   Serial.printf("distance: %f cm\n", distance);
 }
 
@@ -127,6 +167,7 @@ void setup() {
   Serial.begin(115200);
   
   initSonicSensor();
+  Lightstrip.begin();
   initWiFi();
   initOTA();
 

@@ -35,10 +35,11 @@ tasks:
     - for: sources
       cmd: |
         echo "⌛ Building '{{ .ITEM | base }}'..."
-        g++ -std=c++17 {{ .ITEM }} \
+        g++ -DUNIT_TEST -std=c++17 {{ .ITEM }} \
           libraries/ParkingSensor/{{ .ITEM | base | replace "test_" "" }} \
           -I/opt/homebrew/include \
           -Ilibraries/ParkingSensor \
+          -Ilibraries/Adafruit_NeoPixel \
           -L/opt/homebrew/lib -lCatch2Main -lCatch2 \
           -o .build/{{ .ITEM | base | trimSuffix ".cpp" }}
     - echo "✅ All tests have been compiled!"
@@ -64,13 +65,13 @@ tasks:
     - defer: printf "\nℹ️  All tests have executed!\n\n"
     - for: sources
       cmd: |
-        echo "⌛ Executing '{{ .ITEM | base }}'..."
+        printf "⌛ Executing '{{ .ITEM | base }}'...\n\n"
         ./{{ .ITEM }}
         if [ $? -ne 0 ]; then
           echo "❌ {{ .ITEM | base }} failed"
           exit 1
         fi
-        echo "✅ {{ .ITEM | base }} passed"
+        printf "✅ {{ .ITEM | base }} passed\n===============================================================================\n\n"
     ignore_error: true
     status:
     - false # Force to run
