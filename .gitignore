@@ -1,5 +1,6 @@
 # User Configurations
 secrets-*.h
+!secrets.example.h
 
 # Prerequisites
 *.d
