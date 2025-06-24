@@ -6,13 +6,13 @@ on:
       - "parking-sensor.ino"
       - "libraries/**"
       - "tests/**"
-      - ".github/workflows/esp32-build.yml"
+      - ".github/workflows/esp32-build.yaml"
   pull_request:
     paths:
       - "parking-sensor.ino"
       - "libraries/**"
       - "tests/**"
-      - ".github/workflows/esp32-build.yml"
+      - ".github/workflows/esp32-build.yaml"
 
 jobs:
   build:
